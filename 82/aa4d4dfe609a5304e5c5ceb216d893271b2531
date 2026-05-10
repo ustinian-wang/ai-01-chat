@@ -1,0 +1,24 @@
+docs/会话上下文与模型调用总结.md
+  s_374110d27d354e::t_179bf1aa5dcc4b 3
+  s_374110d27d354e::t_b618244af0eb1d 89-90
+README.md
+  s_374110d27d354e::t_b11182594c36b7 29
+  s_374110d27d354e::t_f8e6e2759b7ba9 32-36,39
+  s_374110d27d354e::t_3e517ddc41dc90 3-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "82aa4d4dfe609a5304e5c5ceb216d893271b2531",
+  "prompts": {},
+  "sessions": {
+    "s_374110d27d354e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a935b30e-0bd2-4c97-a899-4fa4fe11c86a",
+        "model": "default"
+      },
+      "human_author": "jser <87244899@qq.com>"
+    }
+  }
+}
