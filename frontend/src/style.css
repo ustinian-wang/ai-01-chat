@@ -1,0 +1,512 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --panel: #161a22;
+  --border: #2a3140;
+  --text: #e8ecf1;
+  --muted: #9aa3b2;
+  --accent: #5b8cff;
+  --danger: #ff6b6b;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    'Apple Color Emoji',
+    'Segoe UI Emoji';
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body.app-root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.app-mount {
+  height: 100%;
+}
+
+/* 界面模式：左侧会话栏 + 右侧主栏（类 ChatGPT 双栏） */
+.app-shell {
+  display: flex;
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 272px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: #12151c;
+}
+
+.sidebar-head {
+  padding: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-new {
+  width: 100%;
+}
+
+.sidebar-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 6px 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.session-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.session-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.session-row.active {
+  border-color: var(--border);
+  background: rgba(91, 140, 255, 0.12);
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: left;
+  padding: 10px 8px 10px 10px;
+  border-radius: 10px 0 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.session-item:disabled {
+  cursor: not-allowed;
+}
+
+.session-row.active .session-item {
+  background: transparent;
+}
+
+.session-title {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-meta {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.session-del {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 36px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 0 10px 10px 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.session-del:hover {
+  color: var(--danger);
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.main-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.layout {
+  /* 右侧：顶栏 + 消息区滚动 + 底部输入区 */
+  flex: 1;
+  min-height: 0;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 16px;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.header {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.header-main {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-context {
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.session-active-label {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.field input {
+  width: 260px;
+  max-width: 60vw;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0b0d12;
+  color: var(--text);
+}
+
+.chat {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0b0d12;
+  padding: 12px;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 18px;
+  text-align: center;
+}
+
+.msg {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.role {
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 6px;
+}
+
+.bubble {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--panel);
+}
+
+/* 用户纯文本气泡：保留换行；助手走 Markdown 解析，不用 pre-wrap 以免破坏块级排版 */
+.msg-user .bubble:not(.md) {
+  white-space: pre-wrap;
+}
+
+.msg-user .bubble.md {
+  background: #121826;
+}
+
+.msg-assistant .bubble {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.md-parse-error {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+/* ---------- Markdown 富文本排版（.md-prose 为 markdown.js 根容器）---------- */
+.md-prose {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.md-prose > :first-child {
+  margin-top: 0;
+}
+
+.md-prose > :last-child {
+  margin-bottom: 0;
+}
+
+.md-prose :where(p, ul, ol, pre, table, blockquote) {
+  margin: 0.55em 0;
+}
+
+.md-prose :where(h1, h2, h3, h4, h5, h6) {
+  font-weight: 650;
+  line-height: 1.3;
+  margin: 0.85em 0 0.45em;
+  color: #f2f5fb;
+}
+
+.md-prose h1 {
+  font-size: 1.55rem;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--border);
+}
+
+.md-prose h2 {
+  font-size: 1.28rem;
+}
+
+.md-prose h3 {
+  font-size: 1.12rem;
+}
+
+.md-prose h4 {
+  font-size: 1.02rem;
+  color: var(--text);
+}
+
+.md-prose ul,
+.md-prose ol {
+  padding-left: 1.35em;
+  margin: 0.45em 0;
+}
+
+.md-prose li {
+  margin: 0.28em 0;
+}
+
+.md-prose li::marker {
+  color: var(--muted);
+}
+
+.md-prose blockquote {
+  margin: 0.65em 0;
+  padding: 0.35em 0.85em 0.35em 1em;
+  border-left: 4px solid var(--accent);
+  background: rgba(91, 140, 255, 0.08);
+  color: var(--muted);
+  border-radius: 0 8px 8px 0;
+}
+
+.md-prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.1em 0;
+}
+
+.md-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.65em 0;
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.md-prose th,
+.md-prose td {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-prose th {
+  background: #121826;
+  font-weight: 600;
+  color: #e8ecf1;
+}
+
+.md-prose tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.md-prose strong {
+  font-weight: 700;
+  color: #fff;
+}
+
+.md-prose em {
+  font-style: italic;
+  color: #dbe3f0;
+}
+
+.md-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.md-prose pre {
+  overflow: auto;
+  border-radius: 10px;
+  padding: 12px 14px;
+  white-space: pre;
+  margin: 0.65em 0;
+  background: #0b0d12;
+  border: 1px solid var(--border);
+}
+
+.md-prose :not(pre) > code {
+  white-space: pre-wrap;
+  font-size: 0.88em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border);
+  color: #f0c674;
+}
+
+.md-prose code {
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace;
+  font-size: 13px;
+}
+
+.composer {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.input {
+  width: 100%;
+  min-height: 72px;
+  max-height: min(40vh, 220px);
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0b0d12;
+  color: var(--text);
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: #0b0d12;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  border-color: #3f63d6;
+  background: linear-gradient(180deg, #5b8cff, #3f63d6);
+  color: #fff;
+}
+
+.btn.ghost {
+  background: transparent;
+}
+
+.btn.danger {
+  border-color: #a23a3a;
+  color: #ffd6d6;
+}
