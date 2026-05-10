@@ -1,6 +1,8 @@
 # ai-01-chat
 
-教学向最小聊天示例：**OpenAI SDK + FastAPI SSE + 进程内对话上下文**，前端 **Vue 3 + Markdown + 代码高亮 + 流式展示**。
+教学向最小聊天示例：**OpenAI SDK + FastAPI SSE + 对话上下文（内存热数据 + 本地 JSON 持久化）**，前端 **Vue 3 + Markdown + 代码高亮 + 流式展示 + 左侧会话列表**。
+
+更完整的实现说明见 **`docs/会话上下文与模型调用总结.md`**（持久化、截断、`messages` 组装、与上游通信、`role` 约定等）。
 
 接口契约与 `projects/langchain-test` 对齐，便于对照学习：
 
@@ -24,12 +26,17 @@
 
 - 本项目的 `/chat/stream` 为 **token 级 SSE**（`data: {"delta":"..."}`），前端用 `fetch` + `ReadableStream` 解析
 - 后端使用 **官方 `openai` Python SDK** 的 `chat.completions.create(..., stream=True)`
-- 会话历史：**内存 + 本地文件** 持久化到 `backend/data/sessions/<thread_id 安全化>.json`（UTF-8 JSON 对象：`thread_id`、`title`、`updated_at`、`messages`；兼容旧版「纯数组」文件），**重启后端仍可拉历史**；不做登录/多租户（默认单用户，仅用 `thread_id` 区分会话）；前端左侧栏调用 `GET/POST /chat/sessions` 管理会话列表
+- 会话历史：**内存 + 本地文件** 持久化到 `backend/data/sessions/<thread_id 安全化>.json`（UTF-8 JSON 对象：`thread_id`、`title`、`updated_at`、`messages`；兼容旧版「纯数组」文件），**重启后端仍可拉历史**；不做登录/多租户（默认单用户，仅用 `thread_id` 区分会话）；前端 **左侧栏** 调用 `GET/POST /chat/sessions` 管理会话列表（类 ChatGPT：新对话、切换、删除）
 - **上下文过长**：`POST /chat/stream` 组装请求前会按 `CONTEXT_TOKEN_LIMIT` / `CONTEXT_TOKEN_RESERVE` 用与前端一致的粗略估算做截断，**从最旧消息起丢弃**直到落入预算；**不删磁盘历史**，仅当次请求变短
+
+## 仓库与 Git 提交
+
+- **本目录 `projects/ai-01-chat` 为独立 Git 仓库**：日常开发请在**本目录内**执行 `git add` / `git commit` / `git push`。
+- 若该目录被放在更大的 monorepo 下作为 **git submodule** 使用，由父仓库单独维护 `.gitmodules` 与 gitlink；**勿**在父仓库把本目录当普通文件夹整树 `git add`（会与子仓库 `.git` 冲突）。
 
 ## 环境变量
 
-复制 `/.env.example` 为 `/.env`（或直接在 `backend/.env` 配置），至少需要：
+复制仓库根下 `.env.example` 为 `backend/.env`（或直接在 `backend/.env` 配置），至少需要：
 
 ```env
 OPENAI_API_KEY=...
