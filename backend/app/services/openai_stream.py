@@ -7,9 +7,12 @@ https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html
 """
 
 import json
+import logging
 import os
 from collections.abc import AsyncIterator
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -84,9 +87,7 @@ async def sse_chat_stream(
     try:
         history = await message_store.get_thread_messages(thread_id)
         # 发给模型的历史不含本轮用户（由 build_openai_messages 追加）
-        prior = list(history)
 
-        # 上下文过长：按预算从旧到新截断（磁盘仍保留全量）
         try:
             limit_raw = os.getenv("CONTEXT_TOKEN_LIMIT", "8192").strip()
             max_in = int(limit_raw) if limit_raw else 8192
@@ -99,13 +100,26 @@ async def sse_chat_stream(
             reserve = 1536
         if max_in < 1024:
             max_in = 1024
-        prior = message_store.trim_history_for_context(
-            prior,
+
+        prior, ctx_stats = message_store.prepare_history_for_api(
+            history,
             SYSTEM_PROMPT,
             user_display,
             max_input_tokens=max_in,
             reserve_completion_tokens=reserve,
         )
+        if ctx_stats["deduped"] or ctx_stats["trimmed"] or ctx_stats["empty_dropped"]:
+            logger.info(
+                "context compact thread=%s raw=%s dedupe=%s api=%s "
+                "empty_dropped=%s deduped=%s trimmed=%s",
+                thread_id,
+                ctx_stats["raw"],
+                ctx_stats["after_dedupe"],
+                ctx_stats["after_trim"],
+                ctx_stats["empty_dropped"],
+                ctx_stats["deduped"],
+                ctx_stats["trimmed"],
+            )
 
         messages = message_store.build_openai_messages(prior, user_display, SYSTEM_PROMPT)
         client = _client()

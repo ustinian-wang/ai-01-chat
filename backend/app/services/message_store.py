@@ -198,6 +198,107 @@ def rough_token_estimate(text: str) -> int:
     return max(0, round(t))
 
 
+def drop_empty_messages(history: list[dict[str, str]]) -> list[dict[str, str]]:
+    """去掉无内容的条目，避免空 assistant 干扰多轮理解。"""
+    out: list[dict[str, str]] = []
+    for m in history:
+        if str(m.get("content") or "").strip():
+            out.append(m)
+    return out
+
+
+# 用户可能多次粘贴相近长文（前缀略不同），仅保留最后一次超长用户消息
+_LONG_USER_MIN_CHARS = 600
+_LONG_USER_KEEP_COUNT = 1
+
+
+def collapse_repeated_long_user_pastes(
+    history: list[dict[str, str]],
+    min_chars: int = _LONG_USER_MIN_CHARS,
+    keep: int = _LONG_USER_KEEP_COUNT,
+) -> list[dict[str, str]]:
+    long_indices = [
+        i
+        for i, m in enumerate(history)
+        if m.get("role") == "user" and len(str(m.get("content") or "")) >= min_chars
+    ]
+    if len(long_indices) <= keep:
+        return list(history)
+
+    drop_indices = set(long_indices[: len(long_indices) - keep])
+    skip: set[int] = set()
+    for i in drop_indices:
+        skip.add(i)
+        if i + 1 < len(history) and history[i + 1].get("role") == "assistant":
+            skip.add(i + 1)
+    return [m for i, m in enumerate(history) if i not in skip]
+
+
+def dedupe_repeated_user_messages(history: list[dict[str, str]]) -> list[dict[str, str]]:
+    """
+    相同用户正文只保留最后一次（及紧随其后的 assistant）。
+    用户可能重复粘贴大段文本，磁盘仍保留全量，仅压缩本次 API 上下文。
+    """
+    if len(history) < 2:
+        return list(history)
+
+    last_idx_by_content: dict[str, int] = {}
+    for i, m in enumerate(history):
+        if m.get("role") != "user":
+            continue
+        key = str(m.get("content") or "").strip()
+        if key:
+            last_idx_by_content[key] = i
+
+    skip: set[int] = set()
+    for i, m in enumerate(history):
+        if m.get("role") != "user":
+            continue
+        key = str(m.get("content") or "").strip()
+        if not key or last_idx_by_content.get(key) == i:
+            continue
+        skip.add(i)
+        if i + 1 < len(history) and history[i + 1].get("role") == "assistant":
+            skip.add(i + 1)
+
+    return [m for i, m in enumerate(history) if i not in skip]
+
+
+def prepare_history_for_api(
+    history: list[dict[str, str]],
+    system_prompt: str,
+    user_message: str,
+    max_input_tokens: int,
+    reserve_completion_tokens: int,
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    """
+    请求模型前的历史整理：去空 → 去重用户长文 → 按 token 从最旧截断。
+    返回 (prior, stats) 便于日志观测。
+    """
+    raw_len = len(history)
+    no_empty = drop_empty_messages(history)
+    cleaned = dedupe_repeated_user_messages(
+        collapse_repeated_long_user_pastes(no_empty),
+    )
+    trimmed = trim_history_for_context(
+        cleaned,
+        system_prompt,
+        user_message,
+        max_input_tokens,
+        reserve_completion_tokens,
+    )
+    stats = {
+        "raw": raw_len,
+        "after_empty": len(no_empty),
+        "after_dedupe": len(cleaned),
+        "after_trim": len(trimmed),
+        "empty_dropped": raw_len - len(no_empty),
+        "deduped": len(no_empty) - len(cleaned),
+        "trimmed": len(cleaned) - len(trimmed),
+    }
+    return trimmed, stats
+
+
 def estimate_prompt_tokens(
     system_prompt: str,
     history: list[dict[str, str]],

@@ -50,6 +50,9 @@
             :limit="contextUsage.limit"
             :ratio="contextUsage.ratio"
             :char-total="contextUsage.charTotal"
+            :will-compact="contextUsage.willCompact"
+            :max-limit="contextUsage.maxLimit"
+            :reserve="contextUsage.reserve"
           />
         </header>
 
@@ -85,12 +88,13 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import ContextRing from './ContextRing.vue';
-import { estimateFromMessages } from './contextUsage.js';
+import { estimateApiContext } from './contextUsage.js';
 import { renderMarkdown } from './markdown.js';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 const contextTokenLimit = Number(import.meta.env.VITE_CONTEXT_TOKEN_LIMIT || 8192);
+const contextTokenReserve = Number(import.meta.env.VITE_CONTEXT_TOKEN_RESERVE || 1536);
 
 const threadId = ref('');
 const draft = ref('');
@@ -100,14 +104,18 @@ const scrollRef = ref(null);
 const sessions = ref([]);
 
 const contextUsage = computed(() => {
-  const { charTotal, tokenEstimate } = estimateFromMessages(messages.value, draft.value);
-  const limit = contextTokenLimit > 0 ? contextTokenLimit : 8192;
-  const ratio = limit > 0 ? tokenEstimate / limit : 0;
+  const est = estimateApiContext(messages.value, draft.value, {
+    limit: contextTokenLimit,
+    reserve: contextTokenReserve,
+  });
   return {
-    charTotal,
-    tokenEstimate,
-    limit,
-    ratio,
+    charTotal: est.charTotal,
+    tokenEstimate: est.tokenEstimate,
+    limit: est.budget,
+    maxLimit: est.limit,
+    reserve: est.reserve,
+    ratio: est.ratio,
+    willCompact: est.willCompact,
   };
 });
 

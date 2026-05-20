@@ -31,6 +31,9 @@ const props = defineProps({
   limit: { type: Number, default: 8192 },
   ratio: { type: Number, default: 0 },
   charTotal: { type: Number, default: 0 },
+  willCompact: { type: Boolean, default: false },
+  maxLimit: { type: Number, default: 8192 },
+  reserve: { type: Number, default: 1536 },
 });
 
 const r = 17;
@@ -52,12 +55,16 @@ const barClass = computed(() => {
 });
 
 const tip = computed(() => {
-  return [
-    '上下文用量（估算）',
-    `约 ${props.used} tokens / 上限 ${props.limit}`,
-    `字符约 ${props.charTotal}`,
-    '含 system、当前消息与输入框草稿；与计费 tokenizer 不完全一致。',
-  ].join('\n');
+  const lines = [
+    '上下文用量（估算，与后端送入模型口径一致）',
+    `约 ${props.used} / ${props.limit} tokens（已为回复预留 ${props.reserve}）`,
+    `模型窗口 ${props.maxLimit}，字符约 ${props.charTotal}`,
+    '重复/多次粘贴的长文只保留最新一份；超出预算时从最旧消息截断。',
+  ];
+  if (props.willCompact) {
+    lines.push('提示：下次发送将压缩/截断历史，界面仍显示完整聊天记录。');
+  }
+  return lines.join('\n');
 });
 </script>
 
