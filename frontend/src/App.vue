@@ -71,7 +71,7 @@
             v-model.trim="draft"
             class="input"
             rows="3"
-            placeholder="输入消息，Enter 发送；Shift+Enter 换行"
+            placeholder="输入消息，⌘+Enter 发送（Windows 为 Ctrl+Enter）；Enter 换行"
             :disabled="busy"
             @keydown="onKeydown"
           />
@@ -353,7 +353,8 @@ async function clearHistory() {
 }
 
 function onKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  const sendShortcut = e.key === 'Enter' && (e.metaKey || e.ctrlKey);
+  if (sendShortcut) {
     e.preventDefault();
     send();
   }
