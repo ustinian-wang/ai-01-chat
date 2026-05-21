@@ -1,0 +1,53 @@
+backend/app/services/openai_stream.py
+  s_2e6f9b42dae813::t_ac03481a243ff3 63
+  s_2e6f9b42dae813::t_0a1c60a4147c8f 114
+  s_2e6f9b42dae813::t_86feebfeef1132 136
+  s_2e6f9b42dae813::t_81325e05341420 134-135,137-140
+  s_2e6f9b42dae813::t_0bfa72a09022f7 112
+  s_2e6f9b42dae813::t_eb56418856605a 28-31,34
+  s_2e6f9b42dae813::t_406a99620bea44 62
+  s_2e6f9b42dae813::t_cbd248fd68c1b6 20,35,38,40
+.env.example
+  s_2e6f9b42dae813::t_556af1cc38a911 1-9,12-17,21-23,25
+  s_2e6f9b42dae813::t_2c034fb0447c59 10-11,18-20
+frontend/src/style.css
+  s_2e6f9b42dae813::t_0b30bbe122a87c 231-256
+backend/app/models/schemas.py
+  s_2e6f9b42dae813::t_b90b79a5655b06 10-13
+  s_2e6f9b42dae813::t_a54dc60ee5ec96 14-17
+backend/app/services/llm_providers.py
+  s_2e6f9b42dae813::t_2cf36ac1304e33 1-4,6,10-15,29,31-37,39-52,92-114,124-130,132-174,185-186,191-200,205-217,219-223
+  s_2e6f9b42dae813::t_4990e58e0e7fec 5,7-9,16-28,30,38,53-91,115-123,131,175-184,187-190,201-204,218
+frontend/src/App.vue
+  s_2e6f9b42dae813::t_092d5862b8977a 136-137,139-142
+  s_2e6f9b42dae813::t_8fb0c29752241f 394
+  s_2e6f9b42dae813::t_81464cbab2f993 39-40,43-44
+  s_2e6f9b42dae813::t_ab253da863a65c 270-282,284-286,288-292,300-301
+  s_2e6f9b42dae813::t_b4200393b85de6 393
+  s_2e6f9b42dae813::t_aa83ed7980895c 49,57-70
+  s_2e6f9b42dae813::t_dfe612cd91fd97 138,143-180
+  s_2e6f9b42dae813::t_b536f030621820 41-42
+  s_2e6f9b42dae813::t_bdc11a920f3a9f 283,287,293-299
+  s_2e6f9b42dae813::t_5a0bd76ed7de28 482
+  s_2e6f9b42dae813::t_6046801d4d4501 48,50-56,71-73
+backend/app/api/v1/chat.py
+  s_2e6f9b42dae813::t_752f975cadb9ac 7
+  s_2e6f9b42dae813::t_e9055938cb0721 23,25
+  s_2e6f9b42dae813::t_86c51a97e38fdf 13-18,22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "d2020b9d3ba4cefb17c4064cf2a7fb46d3de0e47",
+  "prompts": {},
+  "sessions": {
+    "s_2e6f9b42dae813": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7f43ac4c-7278-4d1c-bdd5-3c28092a43bf",
+        "model": "default"
+      },
+      "human_author": "jser <87244899@qq.com>"
+    }
+  }
+}
