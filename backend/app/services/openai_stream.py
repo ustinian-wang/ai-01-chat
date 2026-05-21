@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from app.services import message_store
+from app.services import llm_providers, message_store
 
 # backend/.env（与 app/main.py 中 load 路径一致）
 _DOTENV_PATH = Path(__file__).resolve().parents[2] / ".env"
@@ -25,34 +25,19 @@ _DOTENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 SYSTEM_PROMPT = """你是一个 helpful 的编程与通识助手。回答尽量使用 Markdown；涉及代码时请使用带语言标记的 fenced code block（例如 ```python）。保持简洁准确。"""
 
 
-def _normalize_base_url(url: str | None) -> str | None:
-    """与讯飞文档一致：兼容 OpenAI SDK 时 base_url 建议以 / 结尾。"""
-    if not url:
-        return None
-    u = url.strip().rstrip("/")
-    return f"{u}/"
-
-
-def _client() -> AsyncOpenAI:
-    # 每次请求前再读一次 .env，避免 uvicorn 长驻进程未重启时仍用旧环境
+def _client(
+    provider_id: str | None = None,
+    model_override: str | None = None,
+) -> tuple[AsyncOpenAI, llm_providers.ProviderConfig]:
     if _DOTENV_PATH.is_file():
-        # 本地开发以 backend/.env 为准，避免 shell 里空变量盖住文件
         load_dotenv(_DOTENV_PATH, override=True)
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY is required")
-    raw_base = os.getenv("OPENAI_BASE_URL", "").strip()
-    base_url = _normalize_base_url(raw_base if raw_base else None)
-    return AsyncOpenAI(api_key=api_key, base_url=base_url)
+    cfg = llm_providers.resolve_provider(provider_id, model_override)
+    return AsyncOpenAI(api_key=cfg.api_key, base_url=cfg.base_url), cfg
 
 
-def _model() -> str:
-    return os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
-
-
-def _xfyun_auth_hint(err: BaseException) -> str:
+def _xfyun_auth_hint(err: BaseException, base_url: str) -> str:
     """针对讯飞 HTTP 常见误配给出可操作建议。"""
-    raw = os.getenv("OPENAI_BASE_URL", "").lower()
+    raw = base_url.lower()
     if "xf-yun" not in raw and "xfyun" not in raw:
         return ""
     msg = str(err).lower()
@@ -74,6 +59,8 @@ async def sse_chat_stream(
     thread_id: str,
     message: str,
     image_url: str = "",
+    provider_id: str | None = None,
+    model_override: str | None = None,
 ) -> AsyncIterator[str]:
     """
     产出 text/event-stream 片段。
@@ -122,9 +109,9 @@ async def sse_chat_stream(
             )
 
         messages = message_store.build_openai_messages(prior, user_display, SYSTEM_PROMPT)
-        client = _client()
+        client, provider = _client(provider_id, model_override)
         stream = await client.chat.completions.create(
-            model=_model(),
+            model=provider.model,
             messages=messages,
             stream=True,
             # 讯飞文档可选参数 user：用户唯一 id；此处用 thread_id 便于会话关联
@@ -144,5 +131,11 @@ async def sse_chat_stream(
         await message_store.append_exchange(thread_id, user_display, full_assistant)
         yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
     except Exception as err:  # noqa: BLE001 — 演示项目统一返回 SSE 错误帧
-        detail = str(err) + _xfyun_auth_hint(err)
+        hint = ""
+        try:
+            _, cfg = _client(provider_id, model_override)
+            hint = _xfyun_auth_hint(err, cfg.base_url)
+        except Exception:
+            pass
+        detail = str(err) + hint
         yield f"data: {json.dumps({'error': detail}, ensure_ascii=False)}\n\n"

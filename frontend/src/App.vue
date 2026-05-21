@@ -36,10 +36,41 @@
           <div class="header-main">
             <div>
               <h1 class="title">ai-01-chat</h1>
-              <p class="subtitle">Vue · Markdown · SSE 流式 · 左侧切换会话（thread_id 持久化）</p>
+              <p class="subtitle">
+                Vue · Markdown · SSE 流式 · 左侧切换会话
+                <template v-if="activeProvider && selectedModel">
+                  · {{ activeProvider.label }} / {{ selectedModel }}
+                </template>
+              </p>
               <p class="session-active-label">当前：{{ activeTitle }}</p>
             </div>
             <div class="toolbar">
+              <label v-if="providers.length" class="provider-picker">
+                <span class="provider-picker-label">接口</span>
+                <select
+                  v-model="selectedProvider"
+                  class="provider-select"
+                  :disabled="busy"
+                  @change="onProviderChange"
+                >
+                  <option v-for="p in providers" :key="p.id" :value="p.id">
+                    {{ p.label }}
+                  </option>
+                </select>
+              </label>
+              <label v-if="modelOptions.length" class="provider-picker">
+                <span class="provider-picker-label">模型</span>
+                <select
+                  v-model="selectedModel"
+                  class="provider-select"
+                  :disabled="busy"
+                  @change="onModelChange"
+                >
+                  <option v-for="m in modelOptions" :key="m" :value="m">
+                    {{ m }}
+                  </option>
+                </select>
+              </label>
               <button type="button" class="btn ghost" :disabled="busy" @click="loadHistory">刷新历史</button>
               <button type="button" class="btn danger" :disabled="busy" @click="clearHistory">删除当前会话</button>
             </div>
@@ -102,6 +133,51 @@ const messages = ref([]);
 const busy = ref(false);
 const scrollRef = ref(null);
 const sessions = ref([]);
+const providers = ref([]);
+const selectedProvider = ref('');
+const selectedModel = ref('');
+
+const activeProvider = computed(() =>
+  providers.value.find((p) => p.id === selectedProvider.value),
+);
+
+const modelOptions = computed(() => {
+  const p = activeProvider.value;
+  if (!p) return [];
+  const list = Array.isArray(p.models) && p.models.length ? p.models : [p.model];
+  return list.filter(Boolean);
+});
+
+function readModelMap() {
+  try {
+    const raw = window.localStorage.getItem('ai01_model_map');
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeModelMap(map) {
+  window.localStorage.setItem('ai01_model_map', JSON.stringify(map));
+}
+
+function syncModelForProvider() {
+  const p = activeProvider.value;
+  if (!p) {
+    selectedModel.value = '';
+    return;
+  }
+  const options = modelOptions.value;
+  const map = readModelMap();
+  const saved = map[p.id];
+  if (saved && options.includes(saved)) {
+    selectedModel.value = saved;
+  } else if (options.includes(p.model)) {
+    selectedModel.value = p.model;
+  } else {
+    selectedModel.value = options[0] || p.model || '';
+  }
+}
 
 const contextUsage = computed(() => {
   const est = estimateApiContext(messages.value, draft.value, {
@@ -189,6 +265,38 @@ async function consumeStream(response, onPayload) {
       if (payload) await onPayload(payload);
     }
   }
+}
+
+async function loadProviders() {
+  try {
+    const res = await fetch(toApiUrl('/api/v1/chat/providers'));
+    const data = await res.json();
+    const list = Array.isArray(data.providers) ? data.providers : [];
+    providers.value = list;
+    const saved = window.localStorage.getItem('ai01_provider') || '';
+    const defaultId = data.default_provider || list[0]?.id || '';
+    if (saved && list.some((p) => p.id === saved)) {
+      selectedProvider.value = saved;
+    } else {
+      selectedProvider.value = defaultId;
+    }
+    syncModelForProvider();
+  } catch {
+    providers.value = [];
+    selectedProvider.value = '';
+    selectedModel.value = '';
+  }
+}
+
+function onProviderChange() {
+  window.localStorage.setItem('ai01_provider', selectedProvider.value);
+  syncModelForProvider();
+}
+
+function onModelChange() {
+  const map = readModelMap();
+  map[selectedProvider.value] = selectedModel.value;
+  writeModelMap(map);
 }
 
 async function loadSessions() {
@@ -282,6 +390,8 @@ async function send() {
       thread_id: threadId.value,
       message: text,
       image_url: '',
+      provider: selectedProvider.value,
+      model: selectedModel.value,
     }),
   });
 
@@ -369,6 +479,7 @@ function onKeydown(e) {
 }
 
 onMounted(async () => {
+  await loadProviders();
   await loadSessions();
   const saved = window.localStorage.getItem('ai01_thread_id');
   if (saved && sessions.value.some((s) => s.thread_id === saved)) {

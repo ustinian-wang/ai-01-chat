@@ -4,17 +4,25 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from app.models.schemas import ChatRequest, SessionCreateRequest
-from app.services import message_store
+from app.services import llm_providers, message_store
 from app.services.openai_stream import sse_chat_stream
 
 router = APIRouter()
 
 
+@router.get("/chat/providers")
+async def list_chat_providers():
+    """列出已配置的模型网关（不含密钥），供前端切换。"""
+    return llm_providers.providers_for_api()
+
+
 @router.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
     """与 langchain-test 相同路径；本服务为 token 级 SSE。"""
+    provider = (request.provider or "").strip() or None
+    model = (request.model or "").strip() or None
     return StreamingResponse(
-        sse_chat_stream(request.thread_id, request.message, request.image_url),
+        sse_chat_stream(request.thread_id, request.message, request.image_url, provider, model),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
